@@ -1,0 +1,85 @@
+using System;
+using SharpPcap;
+using PacketDotNet;
+
+namespace list
+{
+    class Program
+    {
+       
+        static void Main(string[] args)
+        {
+            CaptureDeviceList deviceList = CaptureDeviceList.Instance;
+            foreach (ICaptureDevice dev in deviceList)
+            {
+                Console.WriteLine("{0}\n", dev.ToString());
+            }
+            ICaptureDevice device = deviceList[3];
+
+            device.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
+            device.Open(DeviceMode.Promiscuous, 1000);
+            device.Capture();
+            private static void device_OnPacketArrival(object sender, CaptureEventArgs e)
+            {
+                // парсинг всего пакета
+                Packet packet = ParsePacket(e.Packet.LinkLayerType, e.Packet.Data);
+                // получение только TCP пакета из всего фрейма
+                var tcp = (TcpPacket)packet.Extract(typeof(TcpPacket));
+                // получение только IP пакета из всего фрейма
+                var ip = (IpPacket)packet.Extract(typeof(IpPacket));
+                if (tcp != null && ip != null)
+                {
+                    DateTime time = e.Packet.Timeval.Date;
+                    int len = e.Packet.Data.Length;
+
+                    // IP адрес отправителя
+                    var srcIp = ip.SourceAddress.ToString();
+                    // IP адрес получателя
+                    var dstIp = ip.DestinationAddress.ToString();
+
+                    // порт отправителя
+                    var srcPort = tcp.SourcePort.ToString();
+                    // порт получателя
+                    var dstPort = tcp.DestinationPort.ToString();
+                    // данные пакета
+                    var data = tcp.PayloadPacket;
+                }
+            }
+
+
+
+        }
+    }
+}
+            
+            /*device.OnPacketArrival += new PacketArrivalEventHandler(device_OnPacketArrival);
+            device.Open(DeviceMode.Promiscuous, 1000);
+            Console.WriteLine
+            (
+            "Listening on {0}, hit 'Enter' to stop...",
+            device.Description
+            );
+            device.Capture();
+            static void device_OnPacketArrival(object sender, CaptureEventArgs e)
+            {
+                var tcp = TcpPacket.GetEncapsulated(e);
+                var ip = IpPacket.GetEncapsulated(e);
+                if (tcp != null && ip != null)
+                {
+
+                    DateTime time = e.Packet.Timeval.Date;
+                    int len = e.Packet.Data.Length;
+                    //string srcIp = ip.SourceAddress.ToString();
+                    //string dstIp = ip.DestinationAddress.ToString();
+                    Console.WriteLine("{0}:{1}:{2},{3} Len={4}",
+                    time.Hour, time.Minute, time.Second,
+                    time.Millisecond, len);
+                    Console.WriteLine(e.Packet.ToString());
+                }
+            }
+            device.StopCapture();
+            device.Close();
+            
+        }
+    }
+}*/
